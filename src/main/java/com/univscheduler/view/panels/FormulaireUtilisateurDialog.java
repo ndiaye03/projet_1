@@ -38,6 +38,8 @@ public class FormulaireUtilisateurDialog extends JDialog {
     private JTextField txtGroupe;
     private JTextField txtFiliere;
     private JSpinner spNiveau;
+    private JPanel enseignantPanel;
+    private JPanel etudiantPanel;
 
     public FormulaireUtilisateurDialog(JFrame parent, Utilisateur utilisateur) {
         super(parent, utilisateur == null ? "Nouvel utilisateur" : "Modifier l'utilisateur", true);
@@ -56,7 +58,8 @@ public class FormulaireUtilisateurDialog extends JDialog {
         main.setBorder(new EmptyBorder(20, 25, 15, 25));
         main.setBackground(Color.WHITE);
 
-        JPanel form = new JPanel(new GridLayout(0, 2, 10, 8));
+        JPanel form = new JPanel();
+        form.setLayout(new BoxLayout(form, BoxLayout.Y_AXIS));
         form.setBackground(Color.WHITE);
 
         txtNom = UIUtils.creerTextField(20);
@@ -76,31 +79,30 @@ public class FormulaireUtilisateurDialog extends JDialog {
         txtGroupe = UIUtils.creerTextField(15);
         txtFiliere = UIUtils.creerTextField(15);
         spNiveau = new JSpinner(new SpinnerNumberModel(1, 1, 5, 1));
+        cmbRole.addActionListener(e -> mettreAJourChampsSpecifiquesParRole());
 
         configurerModeCreation();
 
-        form.add(new JLabel("Nom :"));
-        form.add(txtNom);
-        form.add(new JLabel("Prenom :"));
-        form.add(txtPrenom);
-        form.add(new JLabel("Email :"));
-        form.add(txtEmail);
-        form.add(new JLabel("Login :"));
-        form.add(txtLogin);
-        form.add(new JLabel("Mot de passe" + (utilisateur != null ? " (laisser vide)" : "") + " :"));
-        form.add(txtMdp);
-        form.add(new JLabel("Role :"));
-        form.add(cmbRole);
-        form.add(new JLabel("Departement (ens.) :"));
-        form.add(txtDept);
-        form.add(new JLabel("Specialite (ens.) :"));
-        form.add(txtSpecialite);
-        form.add(new JLabel("Groupe (etu.) :"));
-        form.add(txtGroupe);
-        form.add(new JLabel("Filiere (etu.) :"));
-        form.add(txtFiliere);
-        form.add(new JLabel("Niveau (etu.) :"));
-        form.add(spNiveau);
+        form.add(creerLigneFormulaire("Nom :", txtNom));
+        form.add(creerLigneFormulaire("Prenom :", txtPrenom));
+        form.add(creerLigneFormulaire("Email :", txtEmail));
+        form.add(creerLigneFormulaire("Login :", txtLogin));
+        form.add(creerLigneFormulaire(
+                "Mot de passe" + (utilisateur != null ? " (laisser vide)" : "") + " :",
+                txtMdp));
+        form.add(creerLigneFormulaire("Role :", cmbRole));
+
+        enseignantPanel = creerBlocSpecifique(
+                creerLigneFormulaire("Departement (ens.) :", txtDept),
+                creerLigneFormulaire("Specialite (ens.) :", txtSpecialite)
+        );
+        etudiantPanel = creerBlocSpecifique(
+                creerLigneFormulaire("Groupe (etu.) :", txtGroupe),
+                creerLigneFormulaire("Filiere (etu.) :", txtFiliere),
+                creerLigneFormulaire("Niveau (etu.) :", spNiveau)
+        );
+        form.add(enseignantPanel);
+        form.add(etudiantPanel);
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         btns.setBackground(Color.WHITE);
@@ -118,6 +120,56 @@ public class FormulaireUtilisateurDialog extends JDialog {
         main.add(form, BorderLayout.CENTER);
         main.add(btns, BorderLayout.SOUTH);
         add(main);
+        mettreAJourChampsSpecifiquesParRole();
+    }
+
+    private JPanel creerLigneFormulaire(String label, JComponent champ) {
+        JPanel ligne = new JPanel(new GridLayout(1, 2, 10, 0));
+        ligne.setOpaque(false);
+        ligne.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        JLabel lbl = new JLabel(label);
+        lbl.setFont(UIUtils.FONT_LABEL);
+        ligne.add(lbl);
+        ligne.add(champ);
+
+        Dimension taillePreferee = ligne.getPreferredSize();
+        ligne.setMaximumSize(new Dimension(Integer.MAX_VALUE, taillePreferee.height));
+        return ligne;
+    }
+
+    private JPanel creerBlocSpecifique(JPanel... lignes) {
+        JPanel bloc = new JPanel();
+        bloc.setLayout(new BoxLayout(bloc, BoxLayout.Y_AXIS));
+        bloc.setOpaque(false);
+        bloc.setAlignmentX(Component.LEFT_ALIGNMENT);
+
+        for (JPanel ligne : lignes) {
+            bloc.add(ligne);
+            bloc.add(Box.createVerticalStrut(8));
+        }
+
+        if (bloc.getComponentCount() > 0) {
+            bloc.remove(bloc.getComponentCount() - 1);
+        }
+
+        return bloc;
+    }
+
+    private void mettreAJourChampsSpecifiquesParRole() {
+        if (cmbRole == null || enseignantPanel == null || etudiantPanel == null) {
+            return;
+        }
+
+        RoleUtilisateur role = RoleUtilisateur.valueOf((String) cmbRole.getSelectedItem());
+        enseignantPanel.setVisible(role == RoleUtilisateur.ENSEIGNANT);
+        etudiantPanel.setVisible(role == RoleUtilisateur.ETUDIANT);
+
+        revalidate();
+        repaint();
+        if (getContentPane().getComponentCount() > 0) {
+            pack();
+        }
     }
 
     private void configurerModeCreation() {
@@ -170,6 +222,8 @@ public class FormulaireUtilisateurDialog extends JDialog {
             txtFiliere.setText(et.getFiliere() != null ? et.getFiliere() : "");
             spNiveau.setValue(et.getNiveau());
         }
+
+        mettreAJourChampsSpecifiquesParRole();
     }
 
     private void enregistrer() {

@@ -7,11 +7,20 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * Classe utilitaire centralisant les constantes de style et les helpers UI.
  */
 public class UIUtils {
+
+    private static final DateTimeFormatter[] FORMATS_DATE = new DateTimeFormatter[]{
+            DateTimeFormatter.ISO_LOCAL_DATE,
+            DateTimeFormatter.ofPattern("uuuu-M-d"),
+            DateTimeFormatter.ofPattern("d-M-uuuu")
+    };
 
     // ─── Palette de couleurs ────────────────────────────────────────────────
     public static final Color COULEUR_PRIMAIRE   = new Color(41, 128, 185);
@@ -184,6 +193,34 @@ public class UIUtils {
             new EmptyBorder(5, 8, 5, 8)
         ));
         return field;
+    }
+
+    /**
+     * Convertit une date saisie par l'utilisateur en format ISO yyyy-MM-dd.
+     */
+    public static String normaliserDateIso(String dateTexte) {
+        String valeur = dateTexte == null ? "" : dateTexte.trim();
+        if (valeur.isEmpty()) {
+            throw new IllegalArgumentException("Date vide.");
+        }
+
+        String normalisee = valeur
+                .replace('/', '-')
+                .replace('.', '-')
+                .replace('–', '-')
+                .replace('—', '-')
+                .replace('−', '-')
+                .replace('‑', '-')
+                .replace('‐', '-');
+
+        for (DateTimeFormatter format : FORMATS_DATE) {
+            try {
+                return LocalDate.parse(normalisee, format).toString();
+            } catch (DateTimeParseException ignored) {
+            }
+        }
+
+        throw new IllegalArgumentException("Date invalide.");
     }
 
     /**

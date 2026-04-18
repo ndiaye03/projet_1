@@ -3,6 +3,7 @@ package com.univscheduler.view.panels;
 import com.univscheduler.dao.SignalementDAO;
 import com.univscheduler.model.RoleUtilisateur;
 import com.univscheduler.model.Signalement;
+import com.univscheduler.model.Signalement.StatutSignalement;
 import com.univscheduler.model.Utilisateur;
 import com.univscheduler.util.UIUtils;
 
@@ -102,9 +103,12 @@ public class SignalementsPanel extends JPanel {
         actions.add(btnRafraichir);
 
         if (utilisateur.getRole() == RoleUtilisateur.ADMIN) {
-            JButton btnTraiter = UIUtils.creerBouton("Marquer traite", UIUtils.COULEUR_ACCENT);
-            btnTraiter.addActionListener(e -> marquerCommeTraite());
-            actions.add(btnTraiter);
+            JButton btnApprouver = UIUtils.creerBouton("Approuver", UIUtils.COULEUR_ACCENT);
+            JButton btnRejeter = UIUtils.creerBouton("Rejeter", UIUtils.COULEUR_DANGER);
+            btnApprouver.addActionListener(e -> modifierStatutSelectionne(StatutSignalement.APPROUVEE));
+            btnRejeter.addActionListener(e -> modifierStatutSelectionne(StatutSignalement.REJETEE));
+            actions.add(btnApprouver);
+            actions.add(btnRejeter);
         }
 
         String[] cols = {"ID", "Date", "Auteur", "Sujet", "Statut", "Description"};
@@ -138,7 +142,7 @@ public class SignalementsPanel extends JPanel {
                     signalement.getDateCreation(),
                     signalement.getNomUtilisateur(),
                     signalement.getSujet(),
-                    signalement.getStatut(),
+                    signalement.getStatut().getLibelle(),
                     signalement.getDescription()
             });
         }
@@ -156,7 +160,7 @@ public class SignalementsPanel extends JPanel {
         signalement.setUtilisateurId(utilisateur.getId());
         signalement.setSujet(sujet);
         signalement.setDescription(description);
-        signalement.setStatut("NOUVEAU");
+        signalement.setStatut(StatutSignalement.EN_ATTENTE);
         signalement.setDateCreation(LocalDateTime.now().format(DATE_FORMAT));
 
         if (signalementDAO.ajouter(signalement)) {
@@ -169,7 +173,7 @@ public class SignalementsPanel extends JPanel {
         }
     }
 
-    private void marquerCommeTraite() {
+    private void modifierStatutSelectionne(StatutSignalement statut) {
         int row = table.getSelectedRow();
         if (row < 0) {
             UIUtils.messageErreur(this, "Selectionnez un signalement.");
@@ -177,8 +181,8 @@ public class SignalementsPanel extends JPanel {
         }
 
         int id = (int) tableModel.getValueAt(row, 0);
-        if (signalementDAO.modifierStatut(id, "TRAITE")) {
-            UIUtils.messageSucces(this, "Signalement marque comme traite.");
+        if (signalementDAO.modifierStatut(id, statut.name())) {
+            UIUtils.messageSucces(this, "Statut du signalement mis a jour.");
             rafraichir();
         } else {
             UIUtils.messageErreur(this, "Impossible de modifier le statut.");

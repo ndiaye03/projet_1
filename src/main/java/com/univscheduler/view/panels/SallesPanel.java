@@ -17,6 +17,7 @@ import javax.swing.event.DocumentListener;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -200,7 +201,7 @@ public class SallesPanel extends JPanel {
 
     private void rechercherDisponibles() {
         JTextField txtDate = UIUtils.creerTextField(10);
-        txtDate.setText("2026-04-09");
+        txtDate.setText(LocalDate.now().toString());
         JTextField txtDeb = UIUtils.creerTextField(5);
         txtDeb.setText("08:00");
         JTextField txtFin = UIUtils.creerTextField(5);
@@ -220,17 +221,25 @@ public class SallesPanel extends JPanel {
             return;
         }
 
-        List<Salle> dispo;
+        String dateIso;
         try {
-            dispo = salleDAO.getSallesDisponiblesPourDate(
-                    txtDate.getText().trim(), txtDeb.getText().trim(), txtFin.getText().trim());
-        } catch (Exception e) {
+            dateIso = UIUtils.normaliserDateIso(txtDate.getText());
+        } catch (IllegalArgumentException e) {
             UIUtils.messageErreur(this, "Date invalide. Utilisez le format YYYY-MM-DD.");
             return;
         }
 
+        List<Salle> dispo;
+        try {
+            dispo = salleDAO.getSallesDisponiblesPourDate(
+                    dateIso, txtDeb.getText().trim(), txtFin.getText().trim());
+        } catch (IllegalArgumentException e) {
+            UIUtils.messageErreur(this, e.getMessage());
+            return;
+        }
+
         StringBuilder sb = new StringBuilder(
-                "Salles disponibles le " + txtDate.getText().trim() + " (" + dispo.size() + ") :\n\n");
+                "Salles disponibles le " + dateIso + " (" + dispo.size() + ") :\n\n");
         dispo.forEach(s -> sb.append("- ").append(s).append("\n"));
         JTextArea ta = new JTextArea(sb.toString());
         ta.setEditable(false);

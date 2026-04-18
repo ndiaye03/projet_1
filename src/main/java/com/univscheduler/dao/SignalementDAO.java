@@ -1,6 +1,7 @@
 package com.univscheduler.dao;
 
 import com.univscheduler.model.Signalement;
+import com.univscheduler.model.Signalement.StatutSignalement;
 
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -25,7 +26,7 @@ public class SignalementDAO {
             ps.setInt(1, signalement.getUtilisateurId());
             ps.setString(2, signalement.getSujet());
             ps.setString(3, signalement.getDescription());
-            ps.setString(4, signalement.getStatut());
+            ps.setString(4, signalement.getStatut().name());
             ps.setString(5, signalement.getDateCreation());
             ps.executeUpdate();
             return true;
@@ -94,10 +95,23 @@ public class SignalementDAO {
                 rs.getInt("utilisateur_id"),
                 rs.getString("sujet"),
                 rs.getString("description"),
-                rs.getString("statut"),
+                convertirStatut(rs.getString("statut")),
                 rs.getString("date_creation")
         );
         signalement.setNomUtilisateur(rs.getString("nom_utilisateur"));
         return signalement;
+    }
+
+    private StatutSignalement convertirStatut(String statut) {
+        if (statut == null || statut.isBlank()) {
+            return StatutSignalement.EN_ATTENTE;
+        }
+
+        return switch (statut.trim().toUpperCase()) {
+            case "NOUVEAU", "EN_ATTENTE" -> StatutSignalement.EN_ATTENTE;
+            case "TRAITE", "APPROUVEE" -> StatutSignalement.APPROUVEE;
+            case "REJETE", "REJETEE" -> StatutSignalement.REJETEE;
+            default -> StatutSignalement.EN_ATTENTE;
+        };
     }
 }

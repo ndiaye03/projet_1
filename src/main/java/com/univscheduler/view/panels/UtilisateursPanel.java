@@ -1,11 +1,13 @@
 package com.univscheduler.view.panels;
 
 import com.univscheduler.dao.UtilisateurDAO;
-import com.univscheduler.model.*;
+import com.univscheduler.model.Enseignant;
+import com.univscheduler.model.Etudiant;
+import com.univscheduler.model.RoleUtilisateur;
+import com.univscheduler.model.Utilisateur;
 import com.univscheduler.util.UIUtils;
 
 import javax.swing.*;
-import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
 import java.util.List;
@@ -32,34 +34,37 @@ public class UtilisateursPanel extends JPanel {
     private void initComponents() {
         JPanel topPanel = new JPanel(new BorderLayout(10, 5));
         topPanel.setBackground(UIUtils.COULEUR_FOND);
-        topPanel.add(UIUtils.creerSousTitre("👥  Gestion des Utilisateurs"), BorderLayout.WEST);
+        topPanel.add(UIUtils.creerSousTitre("Gestion des Utilisateurs"), BorderLayout.WEST);
 
         JPanel filtrePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 8, 0));
         filtrePanel.setBackground(UIUtils.COULEUR_FOND);
         cmbFiltreRole = new JComboBox<>(new String[]{"Tous", "ADMIN", "GESTIONNAIRE", "ENSEIGNANT", "ETUDIANT"});
         cmbFiltreRole.setFont(UIUtils.FONT_LABEL);
         cmbFiltreRole.addActionListener(e -> rafraichir());
-        filtrePanel.add(new JLabel("Rôle :"));
+        filtrePanel.add(new JLabel("Role :"));
         filtrePanel.add(cmbFiltreRole);
         topPanel.add(filtrePanel, BorderLayout.CENTER);
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         btns.setBackground(UIUtils.COULEUR_FOND);
-        JButton btnAjouter   = UIUtils.creerBouton("+ Ajouter", UIUtils.COULEUR_ACCENT);
-        JButton btnModifier  = UIUtils.creerBouton("✏ Modifier", UIUtils.COULEUR_PRIMAIRE);
-        JButton btnSupprimer = UIUtils.creerBouton("🗑 Supprimer", UIUtils.COULEUR_DANGER);
-        JButton btnMdp       = UIUtils.creerBouton("🔑 MdP", new Color(230, 126, 34));
+        JButton btnAjouter = UIUtils.creerBouton("+ Ajouter", UIUtils.COULEUR_ACCENT);
+        JButton btnModifier = UIUtils.creerBouton("Modifier", UIUtils.COULEUR_PRIMAIRE);
+        JButton btnSupprimer = UIUtils.creerBouton("Supprimer", UIUtils.COULEUR_DANGER);
         btnAjouter.addActionListener(e -> ouvrirFormulaireUtilisateur(null));
         btnModifier.addActionListener(e -> modifierUtilisateur());
         btnSupprimer.addActionListener(e -> supprimerUtilisateur());
-        btnMdp.addActionListener(e -> changerMotDePasse());
-        btns.add(btnAjouter); btns.add(btnModifier); btns.add(btnSupprimer); btns.add(btnMdp);
+        btns.add(btnAjouter);
+        btns.add(btnModifier);
+        btns.add(btnSupprimer);
         topPanel.add(btns, BorderLayout.EAST);
         add(topPanel, BorderLayout.NORTH);
 
-        String[] cols = {"ID", "Nom", "Prénom", "Login", "Email", "Rôle", "Infos"};
+        String[] cols = {"ID", "Nom", "Prenom", "Login", "Email", "Role", "Infos"};
         tableModel = new DefaultTableModel(cols, 0) {
-            @Override public boolean isCellEditable(int r, int c) { return false; }
+            @Override
+            public boolean isCellEditable(int r, int c) {
+                return false;
+            }
         };
         table = new JTable(tableModel);
         UIUtils.styliserTable(table);
@@ -79,12 +84,15 @@ public class UtilisateursPanel extends JPanel {
                 : userDAO.getParRole(RoleUtilisateur.valueOf(roleFiltre));
         for (Utilisateur u : users) {
             String infos = "";
-            if (u instanceof Enseignant e) infos = e.getDepartement() != null ? e.getDepartement() : "";
-            else if (u instanceof Etudiant et) infos = (et.getGroupe() != null ? et.getGroupe() : "") + " " + et.getNiveauLibelle();
+            if (u instanceof Enseignant e) {
+                infos = e.getDepartement() != null ? e.getDepartement() : "";
+            } else if (u instanceof Etudiant et) {
+                infos = (et.getGroupe() != null ? et.getGroupe() : "") + " " + et.getNiveauLibelle();
+            }
             tableModel.addRow(new Object[]{
-                u.getId(), u.getNom(), u.getPrenom(), u.getLogin(),
-                u.getEmail() != null ? u.getEmail() : "-",
-                u.getRole().getLibelle(), infos
+                    u.getId(), u.getNom(), u.getPrenom(), u.getLogin(),
+                    u.getEmail() != null ? u.getEmail() : "-",
+                    u.getRole().getLibelle(), infos
             });
         }
     }
@@ -93,37 +101,37 @@ public class UtilisateursPanel extends JPanel {
         FormulaireUtilisateurDialog dialog = new FormulaireUtilisateurDialog(
                 (JFrame) SwingUtilities.getWindowAncestor(this), u);
         dialog.setVisible(true);
-        if (dialog.isConfirme()) rafraichir();
+        if (dialog.isConfirme()) {
+            rafraichir();
+        }
     }
 
     private void modifierUtilisateur() {
         int row = table.getSelectedRow();
-        if (row < 0) { UIUtils.messageErreur(this, "Sélectionnez un utilisateur."); return; }
+        if (row < 0) {
+            UIUtils.messageErreur(this, "Selectionnez un utilisateur.");
+            return;
+        }
         int id = (int) tableModel.getValueAt(row, 0);
         ouvrirFormulaireUtilisateur(userDAO.getParId(id));
     }
 
     private void supprimerUtilisateur() {
         int row = table.getSelectedRow();
-        if (row < 0) { UIUtils.messageErreur(this, "Sélectionnez un utilisateur."); return; }
-        int id = (int) tableModel.getValueAt(row, 0);
-        if (id == utilisateur.getId()) { UIUtils.messageErreur(this, "Impossible de supprimer votre propre compte."); return; }
-        String login = (String) tableModel.getValueAt(row, 3);
-        if (UIUtils.confirmer(this, "Supprimer l'utilisateur « " + login + " » ?")) {
-            if (userDAO.supprimer(id)) rafraichir();
+        if (row < 0) {
+            UIUtils.messageErreur(this, "Selectionnez un utilisateur.");
+            return;
         }
-    }
-
-    private void changerMotDePasse() {
-        int row = table.getSelectedRow();
-        if (row < 0) { UIUtils.messageErreur(this, "Sélectionnez un utilisateur."); return; }
         int id = (int) tableModel.getValueAt(row, 0);
-        JPasswordField pf = new JPasswordField(15);
-        int ok = JOptionPane.showConfirmDialog(this, pf, "Nouveau mot de passe", JOptionPane.OK_CANCEL_OPTION);
-        if (ok == JOptionPane.OK_OPTION) {
-            String mdp = new String(pf.getPassword()).trim();
-            if (mdp.length() >= 4) { userDAO.modifierMotDePasse(id, mdp); UIUtils.messageSucces(this, "Mot de passe modifié."); }
-            else UIUtils.messageErreur(this, "Mot de passe trop court (min 4 caractères).");
+        if (id == utilisateur.getId()) {
+            UIUtils.messageErreur(this, "Impossible de supprimer votre propre compte.");
+            return;
+        }
+        String login = (String) tableModel.getValueAt(row, 3);
+        if (UIUtils.confirmer(this, "Supprimer l'utilisateur \"" + login + "\" ?")) {
+            if (userDAO.supprimer(id)) {
+                rafraichir();
+            }
         }
     }
 }

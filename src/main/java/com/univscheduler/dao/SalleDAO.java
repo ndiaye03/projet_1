@@ -138,7 +138,7 @@ public class SalleDAO {
                 nb_postes, os, sonorisation, retransmission)
             VALUES (?,?,?,?,?,?,?,?,?)
         """;
-        try (PreparedStatement ps = dbManager.getConnection().prepareStatement(sql)) {
+        try (PreparedStatement ps = dbManager.getConnection().prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, s.getNumero());
             ps.setInt(2, s.getCapacite());
             ps.setString(3, s.getType().name());
@@ -153,6 +153,11 @@ public class SalleDAO {
                 ps.setInt(9, a.isRetransmission() ? 1 : 0);
             } else { ps.setInt(8, 0); ps.setInt(9, 0); }
             ps.executeUpdate();
+            try (ResultSet rs = ps.getGeneratedKeys()) {
+                if (rs.next()) {
+                    s.setId(rs.getInt(1));
+                }
+            }
             return true;
         } catch (SQLException e) { e.printStackTrace(); return false; }
     }

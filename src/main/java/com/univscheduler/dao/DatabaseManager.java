@@ -350,6 +350,31 @@ public class DatabaseManager {
                     date_creation   TEXT    NOT NULL DEFAULT CURRENT_TIMESTAMP
                 )
             """);
+            stmt.execute("""
+                CREATE TABLE IF NOT EXISTS signalements (
+                    id              INTEGER PRIMARY KEY AUTOINCREMENT,
+                    utilisateur_id  INTEGER NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
+                    sujet           TEXT    NOT NULL,
+                    description     TEXT    NOT NULL,
+                    statut          TEXT    NOT NULL DEFAULT 'EN_ATTENTE',
+                    date_creation   TEXT    NOT NULL
+                )
+            """);
+            stmt.executeUpdate("""
+                UPDATE signalements
+                SET statut = 'EN_ATTENTE'
+                WHERE statut IS NULL OR TRIM(statut) = '' OR UPPER(statut) = 'NOUVEAU'
+            """);
+            stmt.executeUpdate("""
+                UPDATE signalements
+                SET statut = 'APPROUVEE'
+                WHERE UPPER(statut) = 'TRAITE'
+            """);
+            stmt.executeUpdate("""
+                UPDATE signalements
+                SET statut = 'REJETEE'
+                WHERE UPPER(statut) = 'REJETE'
+            """);
         }
     }
 

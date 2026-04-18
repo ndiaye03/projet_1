@@ -121,7 +121,8 @@ CREATE TABLE IF NOT EXISTS signalements (
     utilisateur_id  INTEGER NOT NULL REFERENCES utilisateurs(id) ON DELETE CASCADE,
     sujet           TEXT    NOT NULL,
     description     TEXT    NOT NULL,
-    statut          TEXT    NOT NULL DEFAULT 'NOUVEAU',
+    statut          TEXT    NOT NULL DEFAULT 'EN_ATTENTE'
+                    CHECK(statut IN ('EN_ATTENTE','APPROUVEE','REJETEE')),
     date_creation   TEXT    NOT NULL
 );
 

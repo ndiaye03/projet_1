@@ -326,10 +326,12 @@ public class CoursPanel extends JPanel {
             return;
         }
 
+        String dateIso;
         LocalDate dateAnnulation;
         try {
-            dateAnnulation = LocalDate.parse(dateTexte);
-        } catch (Exception e) {
+            dateIso = UIUtils.normaliserDateIso(dateTexte);
+            dateAnnulation = LocalDate.parse(dateIso);
+        } catch (IllegalArgumentException e) {
             UIUtils.messageErreur(this, "Date invalide. Utilisez le format YYYY-MM-DD.");
             return;
         }
@@ -340,14 +342,14 @@ public class CoursPanel extends JPanel {
             return;
         }
 
-        if (annulationCoursDAO.estCreneauAnnule(creneau.getId(), dateTexte)) {
+        if (annulationCoursDAO.estCreneauAnnule(creneau.getId(), dateIso)) {
             UIUtils.messageErreur(this, "Ce cours est deja annule pour cette date.");
             return;
         }
 
         AnnulationCours annulation = new AnnulationCours();
         annulation.setCreneauId(creneau.getId());
-        annulation.setDateAnnulation(dateTexte);
+        annulation.setDateAnnulation(dateIso);
         annulation.setMotif(motif);
         annulation.setAnnuleParId(utilisateur.getId());
 
@@ -356,9 +358,9 @@ public class CoursPanel extends JPanel {
             return;
         }
 
-        int notifications = notifierEtudiants(creneau, dateTexte, motif);
+        int notifications = notifierEtudiants(creneau, dateIso, motif);
         UIUtils.messageSucces(this,
-                "Cours annule pour le " + dateTexte + ". " + notifications + " notification(s) envoyee(s).");
+                "Cours annule pour le " + dateIso + ". " + notifications + " notification(s) envoyee(s).");
     }
 
     private int notifierEtudiants(Creneau creneau, String dateAnnulation, String motif) {

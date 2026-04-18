@@ -1,17 +1,25 @@
 package com.univscheduler.view.panels;
 
 import com.univscheduler.dao.BatimentDAO;
+import com.univscheduler.dao.EquipementDAO;
 import com.univscheduler.dao.SalleDAO;
-import com.univscheduler.model.*;
+import com.univscheduler.model.Amphi;
+import com.univscheduler.model.Batiment;
+import com.univscheduler.model.Equipement;
+import com.univscheduler.model.Laboratoire;
+import com.univscheduler.model.Salle;
+import com.univscheduler.model.TypeSalle;
 import com.univscheduler.util.UIUtils;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
- * Formulaire d'ajout/modification d'une salle (Dialog).
+ * Formulaire d'ajout/modification d'une salle.
  */
 public class FormulaireSalleDialog extends JDialog {
 
@@ -19,23 +27,27 @@ public class FormulaireSalleDialog extends JDialog {
     private final Salle salle;
     private final SalleDAO salleDAO = new SalleDAO();
     private final BatimentDAO batimentDAO = new BatimentDAO();
+    private final EquipementDAO equipementDAO = new EquipementDAO();
 
     private JTextField txtNumero;
     private JSpinner spCapacite;
     private JComboBox<String> cmbType;
     private JComboBox<String> cmbBatiment;
     private JCheckBox chkAccessible;
-    // Champs spécifiques
+    private JTextField txtEquipements;
     private JSpinner spPostes;
     private JTextField txtOS;
-    private JCheckBox chkSono, chkRetrans;
-    private List<com.univscheduler.model.Batiment> batiments;
+    private JCheckBox chkSono;
+    private JCheckBox chkRetrans;
+    private List<Batiment> batiments;
 
     public FormulaireSalleDialog(JFrame parent, Salle salle) {
         super(parent, salle == null ? "Ajouter une salle" : "Modifier la salle", true);
         this.salle = salle;
         initComponents();
-        if (salle != null) chargerDonnees();
+        if (salle != null) {
+            chargerDonnees();
+        }
         pack();
         setResizable(false);
         UIUtils.centrer(this);
@@ -50,28 +62,41 @@ public class FormulaireSalleDialog extends JDialog {
         form.setBackground(Color.WHITE);
 
         batiments = batimentDAO.getTous();
-        String[] nomsBat = batiments.stream().map(com.univscheduler.model.Batiment::getNom)
-                .toArray(String[]::new);
+        String[] nomsBatiments = batiments.stream().map(Batiment::getNom).toArray(String[]::new);
 
-        txtNumero    = UIUtils.creerTextField(15);
-        spCapacite   = new JSpinner(new SpinnerNumberModel(30, 1, 1000, 1));
-        cmbType      = new JComboBox<>();
-        for (TypeSalle t : TypeSalle.values()) cmbType.addItem(t.getLibelle());
-        cmbBatiment  = new JComboBox<>(nomsBat);
+        txtNumero = UIUtils.creerTextField(15);
+        spCapacite = new JSpinner(new SpinnerNumberModel(30, 1, 1000, 1));
+        cmbType = new JComboBox<>();
+        for (TypeSalle typeSalle : TypeSalle.values()) {
+            cmbType.addItem(typeSalle.getLibelle());
+        }
+        cmbBatiment = new JComboBox<>(nomsBatiments);
         chkAccessible = new JCheckBox("Oui");
-        spPostes     = new JSpinner(new SpinnerNumberModel(0, 0, 500, 1));
-        txtOS        = UIUtils.creerTextField(15);
-        chkSono      = new JCheckBox("Sonorisation");
-        chkRetrans   = new JCheckBox("Retransmission vidéo");
+        txtEquipements = UIUtils.creerTextField(25);
+        txtEquipements.setToolTipText("Exemple: Projecteur, Tableau blanc, Climatisation");
+        spPostes = new JSpinner(new SpinnerNumberModel(0, 0, 500, 1));
+        txtOS = UIUtils.creerTextField(15);
+        chkSono = new JCheckBox("Sonorisation");
+        chkRetrans = new JCheckBox("Retransmission video");
 
-        form.add(new JLabel("Numéro :")); form.add(txtNumero);
-        form.add(new JLabel("Capacité :")); form.add(spCapacite);
-        form.add(new JLabel("Type :")); form.add(cmbType);
-        form.add(new JLabel("Bâtiment :")); form.add(cmbBatiment);
-        form.add(new JLabel("Accessible PMR :")); form.add(chkAccessible);
-        form.add(new JLabel("Nb postes (labo) :")); form.add(spPostes);
-        form.add(new JLabel("Système OS (labo) :")); form.add(txtOS);
-        form.add(chkSono); form.add(chkRetrans);
+        form.add(new JLabel("Numero :"));
+        form.add(txtNumero);
+        form.add(new JLabel("Capacite :"));
+        form.add(spCapacite);
+        form.add(new JLabel("Type :"));
+        form.add(cmbType);
+        form.add(new JLabel("Batiment :"));
+        form.add(cmbBatiment);
+        form.add(new JLabel("Accessible PMR :"));
+        form.add(chkAccessible);
+        form.add(new JLabel("Equipements :"));
+        form.add(txtEquipements);
+        form.add(new JLabel("Nb postes (labo) :"));
+        form.add(spPostes);
+        form.add(new JLabel("Systeme OS (labo) :"));
+        form.add(txtOS);
+        form.add(chkSono);
+        form.add(chkRetrans);
 
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
         btns.setBackground(Color.WHITE);
@@ -79,7 +104,8 @@ public class FormulaireSalleDialog extends JDialog {
         JButton btnAnnuler = UIUtils.creerBouton("Annuler", UIUtils.COULEUR_TEXTE_CLAIR);
         btnOk.addActionListener(e -> enregistrer());
         btnAnnuler.addActionListener(e -> dispose());
-        btns.add(btnOk); btns.add(btnAnnuler);
+        btns.add(btnOk);
+        btns.add(btnAnnuler);
 
         main.add(UIUtils.creerSousTitre(salle == null ? "Nouvelle salle" : "Modifier salle"), BorderLayout.NORTH);
         main.add(form, BorderLayout.CENTER);
@@ -92,49 +118,102 @@ public class FormulaireSalleDialog extends JDialog {
         spCapacite.setValue(salle.getCapacite());
         cmbType.setSelectedItem(salle.getType().getLibelle());
         chkAccessible.setSelected(salle.isAccessible());
+
         for (int i = 0; i < batiments.size(); i++) {
             if (batiments.get(i).getId() == salle.getBatimentId()) {
-                cmbBatiment.setSelectedIndex(i); break;
+                cmbBatiment.setSelectedIndex(i);
+                break;
             }
         }
-        if (salle instanceof Laboratoire l) {
-            spPostes.setValue(l.getNombrePostes());
-            txtOS.setText(l.getSystemeExploitation() != null ? l.getSystemeExploitation() : "");
+
+        if (salle instanceof Laboratoire laboratoire) {
+            spPostes.setValue(laboratoire.getNombrePostes());
+            txtOS.setText(laboratoire.getSystemeExploitation() != null
+                    ? laboratoire.getSystemeExploitation() : "");
         }
-        if (salle instanceof Amphi a) {
-            chkSono.setSelected(a.isSonorisation());
-            chkRetrans.setSelected(a.isRetransmission());
+
+        if (salle instanceof Amphi amphi) {
+            chkSono.setSelected(amphi.isSonorisation());
+            chkRetrans.setSelected(amphi.isRetransmission());
         }
+
+        txtEquipements.setText(
+                equipementDAO.getParSalle(salle.getId()).stream()
+                        .map(Equipement::getNom)
+                        .collect(Collectors.joining(", "))
+        );
     }
 
     private void enregistrer() {
         String numero = txtNumero.getText().trim();
-        if (numero.isEmpty()) { UIUtils.messageErreur(this, "Numéro requis."); return; }
-        int cap = (int) spCapacite.getValue();
-        int idxBat = cmbBatiment.getSelectedIndex();
-        int batId = (idxBat >= 0 && idxBat < batiments.size()) ? batiments.get(idxBat).getId() : 0;
-        String typeLibelle = (String) cmbType.getSelectedItem();
-        TypeSalle type = null;
-        for (TypeSalle t : TypeSalle.values()) {
-            if (t.getLibelle().equals(typeLibelle)) { type = t; break; }
+        if (numero.isEmpty()) {
+            UIUtils.messageErreur(this, "Numero requis.");
+            return;
         }
 
-        Salle s;
+        int capacite = (int) spCapacite.getValue();
+        int indexBatiment = cmbBatiment.getSelectedIndex();
+        int batimentId = (indexBatiment >= 0 && indexBatiment < batiments.size())
+                ? batiments.get(indexBatiment).getId() : 0;
+
+        TypeSalle type = Arrays.stream(TypeSalle.values())
+                .filter(typeSalle -> typeSalle.getLibelle().equals(cmbType.getSelectedItem()))
+                .findFirst()
+                .orElse(TypeSalle.COURS);
+
+        Salle salleCible;
         if (type == TypeSalle.AMPHI) {
-            s = new Amphi(salle != null ? salle.getId() : 0, numero, cap, batId,
-                    chkAccessible.isSelected(), chkSono.isSelected(), chkRetrans.isSelected());
+            salleCible = new Amphi(
+                    salle != null ? salle.getId() : 0,
+                    numero,
+                    capacite,
+                    batimentId,
+                    chkAccessible.isSelected(),
+                    chkSono.isSelected(),
+                    chkRetrans.isSelected()
+            );
         } else if (type == TypeSalle.LABORATOIRE) {
-            s = new Laboratoire(salle != null ? salle.getId() : 0, numero, cap, batId,
-                    chkAccessible.isSelected(), (int)spPostes.getValue(), txtOS.getText().trim());
+            salleCible = new Laboratoire(
+                    salle != null ? salle.getId() : 0,
+                    numero,
+                    capacite,
+                    batimentId,
+                    chkAccessible.isSelected(),
+                    (int) spPostes.getValue(),
+                    txtOS.getText().trim()
+            );
         } else {
-            s = new Salle(salle != null ? salle.getId() : 0, numero, cap,
-                    type, batId, chkAccessible.isSelected());
+            salleCible = new Salle(
+                    salle != null ? salle.getId() : 0,
+                    numero,
+                    capacite,
+                    type,
+                    batimentId,
+                    chkAccessible.isSelected()
+            );
         }
 
-        boolean ok = salle == null ? salleDAO.ajouter(s) : salleDAO.modifier(s);
-        if (ok) { confirme = true; dispose(); }
-        else UIUtils.messageErreur(this, "Erreur lors de l'enregistrement.");
+        boolean ok = salle == null ? salleDAO.ajouter(salleCible) : salleDAO.modifier(salleCible);
+        if (!ok) {
+            UIUtils.messageErreur(this, "Erreur lors de l'enregistrement.");
+            return;
+        }
+
+        List<String> equipements = Arrays.stream(txtEquipements.getText().split(","))
+                .map(String::trim)
+                .filter(nom -> !nom.isEmpty())
+                .collect(Collectors.toList());
+
+        if (!equipementDAO.remplacerPourSalle(salleCible.getId(), equipements)) {
+            UIUtils.messageErreur(this, "Salle enregistree, mais impossible de sauvegarder les equipements.");
+            return;
+        }
+
+        confirme = true;
+        dispose();
     }
 
-    public boolean isConfirme() { return confirme; }
+    public boolean isConfirme() {
+        return confirme;
+    }
 }

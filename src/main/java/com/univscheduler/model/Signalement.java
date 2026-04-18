@@ -5,18 +5,35 @@ package com.univscheduler.model;
  */
 public class Signalement {
 
+    public enum StatutSignalement {
+        EN_ATTENTE("En attente"),
+        APPROUVEE("Approuve"),
+        REJETEE("Rejete");
+
+        private final String libelle;
+
+        StatutSignalement(String libelle) {
+            this.libelle = libelle;
+        }
+
+        public String getLibelle() {
+            return libelle;
+        }
+    }
+
     private int id;
     private int utilisateurId;
     private String nomUtilisateur;
     private String sujet;
     private String description;
-    private String statut;
+    private StatutSignalement statut;
     private String dateCreation;
 
     public Signalement() {
     }
 
-    public Signalement(int id, int utilisateurId, String sujet, String description, String statut, String dateCreation) {
+    public Signalement(int id, int utilisateurId, String sujet, String description,
+                       StatutSignalement statut, String dateCreation) {
         this.id = id;
         this.utilisateurId = utilisateurId;
         this.sujet = sujet;
@@ -65,11 +82,11 @@ public class Signalement {
         this.description = description;
     }
 
-    public String getStatut() {
+    public StatutSignalement getStatut() {
         return statut;
     }
 
-    public void setStatut(String statut) {
+    public void setStatut(StatutSignalement statut) {
         this.statut = statut;
     }
 

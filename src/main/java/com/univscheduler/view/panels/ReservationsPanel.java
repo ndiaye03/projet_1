@@ -10,6 +10,7 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.table.DefaultTableModel;
 import java.awt.*;
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -104,7 +105,7 @@ public class ReservationsPanel extends JPanel {
         JComboBox<String> cmbSalle = new JComboBox<>(
                 salles.stream().map(Salle::toString).toArray(String[]::new));
         cmbSalle.setFont(UIUtils.FONT_LABEL);
-        JTextField txtDate  = UIUtils.creerTextField(10); txtDate.setText("2026-03-14");
+        JTextField txtDate  = UIUtils.creerTextField(10); txtDate.setText(LocalDate.now().toString());
         JTextField txtDeb   = UIUtils.creerTextField(6);  txtDeb.setText("08:00");
         JTextField txtFin   = UIUtils.creerTextField(6);  txtFin.setText("10:00");
         JTextField txtMotif = UIUtils.creerTextField(30);
@@ -124,9 +125,16 @@ public class ReservationsPanel extends JPanel {
             return;
         }
         int salleId = salles.get(Math.max(0, cmbSalle.getSelectedIndex())).getId();
+        String dateIso;
+        try {
+            dateIso = UIUtils.normaliserDateIso(txtDate.getText());
+        } catch (IllegalArgumentException e) {
+            UIUtils.messageErreur(this, "Date invalide. Utilisez le format YYYY-MM-DD.");
+            return;
+        }
         try {
             boolean disponible = salleDAO.getSallesDisponiblesPourDate(
-                    txtDate.getText().trim(),
+                    dateIso,
                     txtDeb.getText().trim(),
                     txtFin.getText().trim()
             ).stream().anyMatch(salle -> salle.getId() == salleId);
@@ -134,15 +142,15 @@ public class ReservationsPanel extends JPanel {
                 UIUtils.messageErreur(this, "La salle n'est pas disponible sur ce creneau.");
                 return;
             }
-        } catch (Exception e) {
-            UIUtils.messageErreur(this, "Date invalide. Utilisez le format YYYY-MM-DD.");
+        } catch (IllegalArgumentException e) {
+            UIUtils.messageErreur(this, e.getMessage());
             return;
         }
 
         Reservation r = new Reservation();
         r.setSalleId(salleId);
         r.setUtilisateurId(utilisateur.getId());
-        r.setDate(txtDate.getText().trim());
+        r.setDate(dateIso);
         r.setHeureDebut(txtDeb.getText().trim());
         r.setHeureFin(txtFin.getText().trim());
         r.setMotif(txtMotif.getText().trim());
