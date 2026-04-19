@@ -87,6 +87,21 @@ public class UtilisateurDAO {
         return null;
     }
 
+    public Utilisateur getParLoginOuEmail(String identifiant) {
+        String sql = "SELECT * FROM utilisateurs WHERE login = ? OR email = ?";
+        try (PreparedStatement pstmt = dbManager.getConnection().prepareStatement(sql)) {
+            pstmt.setString(1, identifiant);
+            pstmt.setString(2, identifiant);
+            ResultSet rs = pstmt.executeQuery();
+            if (rs.next()) {
+                return mapperUtilisateur(rs);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
     public boolean ajouter(Utilisateur u) {
         String sql = """
             INSERT INTO utilisateurs (nom, prenom, email, login, mot_de_passe, role,

@@ -2,6 +2,7 @@ package com.univscheduler.view;
 
 import com.univscheduler.dao.UtilisateurDAO;
 import com.univscheduler.model.Utilisateur;
+import com.univscheduler.util.EmailService;
 import com.univscheduler.util.UIUtils;
 
 import javax.imageio.ImageIO;
@@ -21,11 +22,14 @@ import javax.swing.SwingWorker;
 import javax.swing.border.EmptyBorder;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Cursor;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Image;
 import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -41,6 +45,7 @@ public class LoginView extends JFrame {
     private JPasswordField txtMotDePasse;
     private JButton btnConnexion;
     private JLabel lblMessage;
+    private JLabel lblMotDePasseOublie;
 
     private final UtilisateurDAO utilisateurDAO = new UtilisateurDAO();
     private final Image backgroundImage = chargerImageFond();
@@ -148,6 +153,18 @@ public class LoginView extends JFrame {
         btnConnexion.setMaximumSize(new Dimension(Integer.MAX_VALUE, 42));
         btnConnexion.setAlignmentX(Component.LEFT_ALIGNMENT);
 
+        lblMotDePasseOublie = new JLabel("<html><u>Mot de passe oublie ?</u></html>");
+        lblMotDePasseOublie.setFont(UIUtils.FONT_SMALL);
+        lblMotDePasseOublie.setForeground(new Color(17, 49, 79));
+        lblMotDePasseOublie.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+        lblMotDePasseOublie.setAlignmentX(Component.LEFT_ALIGNMENT);
+        lblMotDePasseOublie.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                envoyerMotDePasseOublie();
+            }
+        });
+
         lblMessage = new JLabel(" ");
         lblMessage.setFont(UIUtils.FONT_SMALL);
         lblMessage.setForeground(UIUtils.COULEUR_DANGER);
@@ -172,6 +189,8 @@ public class LoginView extends JFrame {
         cardPanel.add(lblMdpLabel);
         cardPanel.add(Box.createVerticalStrut(6));
         cardPanel.add(txtMotDePasse);
+        cardPanel.add(Box.createVerticalStrut(8));
+        cardPanel.add(lblMotDePasseOublie);
         cardPanel.add(Box.createVerticalStrut(24));
         cardPanel.add(btnConnexion);
         cardPanel.add(Box.createVerticalStrut(10));
@@ -232,6 +251,81 @@ public class LoginView extends JFrame {
                     }
                 } catch (Exception ex) {
                     lblMessage.setText("Erreur de connexion.");
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void envoyerMotDePasseOublie() {
+        String identifiant = txtLogin.getText().trim();
+        if (identifiant.isEmpty()) {
+            lblMessage.setText("Saisissez votre identifiant ou email.");
+            txtLogin.requestFocus();
+            return;
+        }
+
+        lblMessage.setText("Envoi du mot de passe en cours...");
+        btnConnexion.setEnabled(false);
+        lblMotDePasseOublie.setEnabled(false);
+
+        SwingWorker<Boolean, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Boolean doInBackground() {
+                Utilisateur utilisateur = utilisateurDAO.getParLoginOuEmail(identifiant);
+                if (utilisateur == null || utilisateur.getEmail() == null || utilisateur.getEmail().isBlank()) {
+                    return false;
+                }
+
+                String sujet = "Recuperation de votre mot de passe UNIV-SCHEDULER";
+                String contenu = String.format("""
+                        Bonjour %s %s,
+
+                        Voici votre mot de passe actuel pour UNIV-SCHEDULER :
+
+                        %s
+
+                        Identifiant : %s
+
+                        Administration UNIV-SCHEDULER
+                        """,
+                        utilisateur.getPrenom(),
+                        utilisateur.getNom(),
+                        utilisateur.getMotDePasse(),
+                        utilisateur.getLogin());
+                return EmailService.envoyerEmail(utilisateur.getEmail(), sujet, contenu);
+            }
+
+            @Override
+            protected void done() {
+                btnConnexion.setEnabled(true);
+                lblMotDePasseOublie.setEnabled(true);
+                try {
+                    if (get()) {
+                        lblMessage.setText(" ");
+                        JOptionPane.showMessageDialog(
+                                LoginView.this,
+                                "Vous allez recevoir un mail vous indiquant votre mot de passe actuel.",
+                                "Confirmation",
+                                JOptionPane.INFORMATION_MESSAGE
+                        );
+                    } else {
+                        lblMessage.setText(" ");
+                        JOptionPane.showMessageDialog(
+                                LoginView.this,
+                                "Echoue, reessayer plus tard.",
+                                "Echec",
+                                JOptionPane.ERROR_MESSAGE
+                        );
+                    }
+                } catch (Exception ex) {
+                    lblMessage.setText(" ");
+                    JOptionPane.showMessageDialog(
+                            LoginView.this,
+                            "Echoue, reessayer plus tard.",
+                            "Echec",
+                            JOptionPane.ERROR_MESSAGE
+                    );
                 }
             }
         };

@@ -27,12 +27,12 @@ public class EmailService {
     private static final String SENDER_EMAIL = "papalyndiaye0@gmail.com";
     private static final String SENDER_PASSWORD = "dgak etuz ekel uyhv";
 
-    public static void envoyerEmail(String destinataire, String sujet, String contenu) {
+    public static boolean envoyerEmail(String destinataire, String sujet, String contenu) {
         if (!configurationSmtpValide()) {
             System.out.println("[SIMULATION EMAIL] Vers : " + destinataire);
             System.out.println("Sujet : " + sujet);
             System.out.println("Contenu : " + contenu);
-            return;
+            return true;
         }
 
         Properties props = new Properties();
@@ -58,8 +58,10 @@ public class EmailService {
             message.setSubject(sujet);
             message.setText(contenu);
             Transport.send(message);
+            return true;
         } catch (MessagingException e) {
             System.err.println("[EMAIL] Erreur d'envoi : " + e.getMessage());
+            return false;
         }
     }
 
